@@ -26,7 +26,7 @@ def myipfb(inft,win,ntap):
     winft=np.fft.rfft(winmat,axis=0)
     myft=np.fft.rfft(in_unft,axis=0)
     out=np.fft.irfft(myft/np.conj(winft),axis=0)
-    return out,winft
+    return out
 #plt.ion()
 ntap=4
 nchan=1025
@@ -36,8 +36,8 @@ x=np.random.randn(nslice+ntap-1,nn)
 xx=np.ravel(x)
 
 #CUDA expects the window function as an input, so calculate it here.
-win=pfb.sinc_hamming(ntap,nn)
-win=np.asarray(win,dtype='float32')
+dwin=pfb.sinc_hamming(ntap,nn)
+win=np.asarray(dwin,dtype='float32')
 
 #get the PFB of 
 dxpfb=pfb.pfb(xx,nchan,ntap,pfb.sinc_hamming)
@@ -56,7 +56,11 @@ for i in range(10):
     t2=time.time()
     print('took ',t2-t1,' seconds to do ipfb, rate of ',out.size/(t2-t1)/1e6,' Msamp/s')
 
-to_cut=100
+t1=time.time()
+out2=myipfb(dxpfb,dwin,ntap)
+t2=time.time()
+print('host ipfb took ',t2-t1,' seconds.')
+to_cut=1000
 imax=out.shape[0]-to_cut
 print("RMS error in reconstruction is ",np.std(out[to_cut:imax,:]-x[to_cut:imax,:]))
-
+print("RMS difference between GPU/host is ",np.std(out[to_cut:imax,:]-out2[to_cut:imax,:]))
